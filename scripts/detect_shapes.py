@@ -1,37 +1,45 @@
 import numpy as np
 from shapely.geometry import Polygon, Point
 from shapely.affinity import rotate, scale, translate
-from helper_for_csvs import read_csv
-import math
+from helper_for_csvs import read_csv, plot
 
 def fit_shapes(polyline_group):
     results = []
     for polylines in polyline_group:
         for polyline in polylines:
-            best_shape = fit_shape(polyline)
-            results.append(best_shape)
-    return results
+            best_shape_points = fit_shape(polyline)
+            results.append(best_shape_points)
+    return [results]
 
 def fit_shape(points):
     # Ensure points is a numpy array
     points = np.array(points)
     
     # Fit different shapes and calculate errors
-    line_error = fit_line(points)
-    circle_error = fit_circle(points)
-    rectangle_error, is_rectangular = fit_rectangle(points)
-    ellipse_error = fit_ellipse(points)
-    star_error = fit_star(points)
+    line_error, line_points = fit_line(points)
+    circle_error, circle_points = fit_circle(points)
+    rectangle_error, is_rectangular, rectangle_points = fit_rectangle(points)
+    ellipse_error, ellipse_points = fit_ellipse(points)
+    star_error, star_points = fit_star(points)
     
-    # Collect all errors
-    errors = sorted([["straight line", line_error], ["circle", circle_error], ['rectangle', rectangle_error], ["ellipse", ellipse_error], ["star", star_error]], key = lambda x: x[1])
+    # Collect all errors and their corresponding points
+    errors = [
+        ["straight line", line_error, line_points],
+        ["circle", circle_error, circle_points],
+        ["rectangle", rectangle_error, rectangle_points],
+        ["ellipse", ellipse_error, ellipse_points],
+        ["star", star_error, star_points]
+    ]
+    errors = sorted(errors, key=lambda x: x[1])
     best_shape = errors[0][0]
+    best_points = errors[0][2]
     
-    # If the best shape is a rectangle
-    if best_shape != 'rectangle' and is_rectangular and errors[1][0] == 'rectangle':
-        return "rectangle"
-    else:
-        return best_shape
+    # If the best shape is not rectangle but it's approximately rectangular
+    if best_shape != 'rectangle' and is_rectangular:
+        best_shape = 'rectangle'
+        best_points = rectangle_points
+    
+    return best_points
 
 def fit_line(points):
     x = points[:, 0]
@@ -39,8 +47,9 @@ def fit_line(points):
     A = np.vstack([x, np.ones(len(x))]).T
     m, c = np.linalg.lstsq(A, y, rcond=None)[0]
     line = m * x + c
+    line_points = np.column_stack((x, line))
     error = np.mean((y - line) ** 2)
-    return error
+    return error, line_points
 
 def fit_circle(points):
     poly = Polygon(points)
@@ -48,12 +57,14 @@ def fit_circle(points):
     radii = [Point(p).distance(center) for p in points]
     radius = np.mean(radii)
     circle = Point(center).buffer(radius)
+    circle_points = np.array(circle.exterior.coords)
     error = abs(poly.area - circle.area)
-    return error
+    return error, circle_points
 
 def fit_rectangle(points):
     poly = Polygon(points)
     min_rect = poly.minimum_rotated_rectangle
+    rectangle_points = np.array(min_rect.exterior.coords)
     
     # Calculate area difference
     area_diff = abs(poly.area - min_rect.area)
@@ -71,16 +82,9 @@ def fit_rectangle(points):
         if angle > 1:
             count_greater_than_one += 1
     
-    # Find the 4 angles closest to 90 degrees (π/2 radians)
-    # angle_diffs = [abs(angle - math.pi/2) for angle in angles]
-    # closest_indices = np.argsort(angle_diffs)[:4]
-    # closest_angles = [angles[i] for i in closest_indices]
-    # print(count_greater_than_one)
+    is_rectangular = count_greater_than_one == 4
     
-    # Check if these 4 angles are approximately 90 degrees
-    # is_rectangular = all(abs(angle - math.pi/2) < 0.1 for angle in closest_angles)  # 0.1 radians is about 5.7 degrees tolerance
-    
-    return area_diff, count_greater_than_one == 4
+    return area_diff, is_rectangular, rectangle_points
 
 def fit_ellipse(points):
     x = points[:, 0]
@@ -110,12 +114,13 @@ def fit_ellipse(points):
     ellipse = scale(circle, a, b)
     ellipse = rotate(ellipse, angle, origin='center')
     ellipse = translate(ellipse, x_mean, y_mean)
+    ellipse_points = np.array(ellipse.exterior.coords)
     
     # Calculate the error
     poly = Polygon(points)
     error = abs(poly.area - ellipse.area)
     
-    return error
+    return error, ellipse_points
 
 def fit_star(points):
     centroid = np.mean(points, axis=0)
@@ -135,14 +140,14 @@ def fit_star(points):
     
     # Check if number of peaks and valleys are similar and > 2 (for at least a 5-pointed star)
     if num_peaks < 3 or num_valleys < 3 or abs(num_peaks - num_valleys) > 1:
-        return float('inf')
+        return float('inf'), points
     
     peak_distances = sorted_distances[peaks]
     valley_distances = sorted_distances[valleys]
     
     # Check if peaks are significantly larger than valleys
     if np.mean(peak_distances) <= 1.5 * np.mean(valley_distances):
-        return float('inf')
+        return float('inf'), points
     
     # Create a star shape
     n_points = num_peaks * 2
@@ -155,11 +160,16 @@ def fit_star(points):
         star_points.append((x, y))
     
     star = Polygon(star_points)
+    star_points = np.array(star.exterior.coords)
     poly = Polygon(points)
     error = abs(poly.area - star.area)
     
-    return error
+    return error, star_points
 
+# Read polylines from CSV
 polylines = read_csv(r'C:\Users\GURDARSH VIRK\OneDrive\Documents\adobe-gensolve-2024\problems\problems\isolated.csv')
+
+# Fit shapes to polylines and get best fit shapes
 shapes = fit_shapes(polylines)
-print(shapes)
+# Plot the best fit shapes
+plot(shapes)
