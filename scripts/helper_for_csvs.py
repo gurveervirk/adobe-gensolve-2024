@@ -16,11 +16,16 @@ def read_csv(csv_path):
         path_XYs . append ( XYs )
     return path_XYs
 
-def plot(paths_XYs):
-    fig, ax = plt.subplots(tight_layout = True, figsize=(8, 8))
-    for i , XYs in enumerate(paths_XYs):
-        c = colours[i % len(colours)]
-        for XY in XYs :
-            ax.plot(XY[: , 0] , XY [: , 1] , c=c , linewidth =2)
-            ax.set_aspect('equal')
+def plot(paths_XYs, filename, names):
+    fig, ax = plt.subplots(tight_layout=True, figsize=(8, 8))
+    ind = 0
+    for i, XYs in enumerate(paths_XYs):
+        for j, XY in enumerate(XYs):
+            c = colours[ind % len(colours)]
+            ind += 1
+            ax.plot(XY[:, 0], XY[:, 1], c=c, linewidth=2)
+            midpoint = np.mean(XY, axis=0)
+            ax.text(midpoint[0], midpoint[1], names[j], fontsize=12, color=c, ha='center')
+        ax.set_aspect('equal')
+    plt.savefig(f'misc-outputs/{filename}')
     plt.show()

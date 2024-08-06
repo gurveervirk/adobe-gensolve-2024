@@ -1,15 +1,25 @@
 import numpy as np
-from shapely.geometry import Polygon, Point
-from shapely.affinity import rotate, scale, translate
+from shapely.geometry import Polygon, Point, MultiPoint
 from helper_for_csvs import read_csv, plot
+import cv2
+from scipy.optimize import least_squares
+
+def calculate_polygon_error(original_points, fitted_points):
+    fitted_polygon = Polygon(fitted_points).exterior
+    distances = [fitted_polygon.distance(Point(p)) for p in original_points]
+    return np.mean(distances)
 
 def fit_shapes(polyline_group):
     results = []
+    names = []
+    errors = []
     for polylines in polyline_group:
         for polyline in polylines:
             best_shape_points = fit_shape(polyline)
-            results.append(best_shape_points)
-    return [results]
+            results.append(best_shape_points[0])
+            names.append(best_shape_points[2])
+            errors.append(best_shape_points[1])
+    return [results], names, errors
 
 def fit_shape(points):
     # Ensure points is a numpy array
@@ -18,28 +28,36 @@ def fit_shape(points):
     # Fit different shapes and calculate errors
     line_error, line_points = fit_line(points)
     circle_error, circle_points = fit_circle(points)
-    rectangle_error, is_rectangular, rectangle_points = fit_rectangle(points)
+    rectangle_error, rectangle_points = fit_rectangle(points)
     ellipse_error, ellipse_points = fit_ellipse(points)
     star_error, star_points = fit_star(points)
+    triangle_error, triangle_points = fit_triangle(points)
+    square_error, square_points = fit_square(points)
+    pentagon_error, pentagon_points = fit_pentagon(points)
+    hexagon_error, hexagon_points = fit_hexagon(points)
     
     # Collect all errors and their corresponding points
     errors = [
-        ["straight line", line_error, line_points],
+        ["line", line_error, line_points],
         ["circle", circle_error, circle_points],
         ["rectangle", rectangle_error, rectangle_points],
         ["ellipse", ellipse_error, ellipse_points],
-        ["star", star_error, star_points]
+        ["star", star_error, star_points],
+        ["triangle", triangle_error, triangle_points],
+        ["square", square_error, square_points],
+        ["pentagon", pentagon_error, pentagon_points],
+        ["hexagon", hexagon_error, hexagon_points]
     ]
     errors = sorted(errors, key=lambda x: x[1])
     best_shape = errors[0][0]
+    lowest_error = errors[0][1]
     best_points = errors[0][2]
+
+    print(f"Errors: line={line_error:.2f} circle={circle_error:.2f}, rectangle={rectangle_error:.9f}, ellipse={ellipse_error:.2f}, "
+          f"star={star_error:.2f}, triangle={triangle_error:.2f}, square={square_error:.9f}, "
+          f"pentagon={pentagon_error:.2f}, hexagon={hexagon_error:.2f}")
     
-    # If the best shape is not rectangle but it's approximately rectangular
-    if best_shape != 'rectangle' and is_rectangular:
-        best_shape = 'rectangle'
-        best_points = rectangle_points
-    
-    return best_points
+    return best_points, lowest_error, best_shape
 
 def fit_line(points):
     x = points[:, 0]
@@ -48,108 +66,84 @@ def fit_line(points):
     m, c = np.linalg.lstsq(A, y, rcond=None)[0]
     line = m * x + c
     line_points = np.column_stack((x, line))
-    error = np.mean((y - line) ** 2)
+    error = calculate_polygon_error(points, line_points)
     return error, line_points
 
 def fit_circle(points):
-    poly = Polygon(points)
-    center = poly.centroid
-    radii = [Point(p).distance(center) for p in points]
-    radius = np.mean(radii)
-    circle = Point(center).buffer(radius)
-    circle_points = np.array(circle.exterior.coords)
-    error = abs(poly.area - circle.area)
-    return error, circle_points
+    points = np.array(points)
+    
+    # Calculate initial guess for circle center and radius
+    x_m = np.mean(points[:, 0])
+    y_m = np.mean(points[:, 1])
+    center_initial = np.array([x_m, y_m])
+    
+    def calc_R(c):
+        """Calculate the distance of each data point from the center c (xc, yc)."""
+        return np.sqrt((points[:, 0] - c[0])**2 + (points[:, 1] - c[1])**2)
+    
+    def objective_function(c):
+        """Calculate the algebraic distance between the data points and the mean circle centered at c."""
+        Ri = calc_R(c)
+        return Ri - Ri.mean()
+    
+    center_optimized = least_squares(objective_function, center_initial).x
+    radius_optimized = calc_R(center_optimized).mean()
+    
+    # Generate fitted circle points
+    circle_points = np.array([
+        [center_optimized[0] + radius_optimized * np.cos(theta), 
+         center_optimized[1] + radius_optimized * np.sin(theta)]
+        for theta in np.linspace(0, 2 * np.pi, 100)
+    ])
+    
+    circle_error = calculate_polygon_error(points, circle_points)
+    
+    return circle_error, circle_points
 
 def fit_rectangle(points):
-    poly = Polygon(points)
-    min_rect = poly.minimum_rotated_rectangle
-    rectangle_points = np.array(min_rect.exterior.coords)
+    multi_point = MultiPoint(points)
+    rect = multi_point.minimum_rotated_rectangle
+    rect_points = np.array(rect.exterior.coords)
     
-    # Calculate area difference
-    area_diff = abs(poly.area - min_rect.area)
-
-    # Calculate angles for all vertices in the original polygon
-    angles = []
-    n = len(points)
-    count_greater_than_one = 0
-    for i in range(n):
-        v1 = points[i] - points[i-1]
-        v2 = points[(i+1) % n] - points[i]
-        angle = np.arctan2(np.cross(v2, v1), np.dot(v2, v1))
-        angle = abs(angle)
-        angles.append(angle)
-        if angle > 1:
-            count_greater_than_one += 1
+    rectangle_error = calculate_polygon_error(points, rect_points)
     
-    is_rectangular = count_greater_than_one == 4
-    
-    return area_diff, is_rectangular, rectangle_points
+    return rectangle_error, rect_points
 
 def fit_ellipse(points):
-    x = points[:, 0]
-    y = points[:, 1]
-    x_mean, y_mean = np.mean(x), np.mean(y)
+    if len(points) < 5:
+        return float('inf'), points
+    points = np.array(points, dtype=np.float32)
+    ellipse = cv2.fitEllipse(points)
+    ellipse_points = cv2.ellipse2Poly((int(ellipse[0][0]), int(ellipse[0][1])), (int(ellipse[1][0]//2), int(ellipse[1][1]//2)), int(ellipse[2]), 0, 360, 1)
+    ellipse_points = np.array(ellipse_points, dtype=np.float32)
     
-    # Calculate the covariance matrix
-    cov = np.cov(x - x_mean, y - y_mean)
+    ellipse_error = calculate_polygon_error(points, ellipse_points)
     
-    # Calculate the eigenvalues and eigenvectors
-    evals, evecs = np.linalg.eig(cov)
-    
-    # Sort eigenvalues in descending order
-    sort_indices = np.argsort(evals)[::-1]
-    evals = evals[sort_indices]
-    evecs = evecs[:, sort_indices]
-    
-    # Calculate the angle of rotation
-    angle = np.arctan2(evecs[1, 0], evecs[0, 0])
-    
-    # Calculate the semi-major and semi-minor axes
-    a = np.sqrt(evals[0]) * 2
-    b = np.sqrt(evals[1]) * 2
-    
-    # Create an ellipse using shapely
-    circle = Point(0, 0).buffer(1)
-    ellipse = scale(circle, a, b)
-    ellipse = rotate(ellipse, angle, origin='center')
-    ellipse = translate(ellipse, x_mean, y_mean)
-    ellipse_points = np.array(ellipse.exterior.coords)
-    
-    # Calculate the error
-    poly = Polygon(points)
-    error = abs(poly.area - ellipse.area)
-    
-    return error, ellipse_points
+    return ellipse_error, ellipse_points
 
 def fit_star(points):
     centroid = np.mean(points, axis=0)
     distances = np.linalg.norm(points - centroid, axis=1)
     angles = np.arctan2(points[:, 1] - centroid[1], points[:, 0] - centroid[0])
     
-    # Sort points by angle
     sorted_indices = np.argsort(angles)
     sorted_distances = distances[sorted_indices]
     
-    # Find local maxima (peaks) and minima (valleys)
     peaks = (sorted_distances > np.roll(sorted_distances, 1)) & (sorted_distances > np.roll(sorted_distances, -1))
     valleys = (sorted_distances < np.roll(sorted_distances, 1)) & (sorted_distances < np.roll(sorted_distances, -1))
     
     num_peaks = np.sum(peaks)
     num_valleys = np.sum(valleys)
     
-    # Check if number of peaks and valleys are similar and > 2 (for at least a 5-pointed star)
     if num_peaks < 3 or num_valleys < 3 or abs(num_peaks - num_valleys) > 1:
         return float('inf'), points
     
     peak_distances = sorted_distances[peaks]
     valley_distances = sorted_distances[valleys]
     
-    # Check if peaks are significantly larger than valleys
     if np.mean(peak_distances) <= 1.5 * np.mean(valley_distances):
         return float('inf'), points
     
-    # Create a star shape
     n_points = num_peaks * 2
     star_points = []
     for i in range(n_points):
@@ -159,17 +153,63 @@ def fit_star(points):
         y = centroid[1] + radius * np.sin(angle)
         star_points.append((x, y))
     
-    star = Polygon(star_points)
-    star_points = np.array(star.exterior.coords)
-    poly = Polygon(points)
-    error = abs(poly.area - star.area)
+    star_points = np.array(star_points)
+    star_error = calculate_polygon_error(points, star_points)
+    star_points = np.append(star_points, [star_points[0]], axis=0)
+    return star_error, star_points
+
+def fit_triangle(points):
+    hull = cv2.convexHull(np.array(points, dtype=np.float32))
+    if len(hull) > 3:
+        hull = cv2.approxPolyDP(hull, 0.02 * cv2.arcLength(hull, True), True)
     
-    return error, star_points
+    if len(hull) != 3:
+        return float('inf'), points
+    
+    triangle_points = np.array(hull).reshape(-1, 2)
+    triangle_error = calculate_polygon_error(points, triangle_points)
+    
+    return triangle_error, triangle_points
+
+def fit_square(points):
+    rect = cv2.minAreaRect(np.array(points, dtype=np.float32))
+    box = cv2.boxPoints(rect)
+    
+    edges = np.roll(box, 1, axis=0) - box
+    edge_lengths = np.linalg.norm(edges, axis=1)
+    if max(edge_lengths) / min(edge_lengths) > 1.2:
+        return float('inf'), points
+    
+    square_points = np.array(box)
+    square_error = calculate_polygon_error(points, square_points)
+    
+    return square_error, square_points
+
+def fit_regular_polygon(points, n_sides):
+    hull = cv2.convexHull(np.array(points, dtype=np.float32))
+    epsilon = 0.02 * cv2.arcLength(hull, True)
+    approx = cv2.approxPolyDP(hull, epsilon, True)
+    
+    if len(approx) != n_sides:
+        return float('inf'), points
+    
+    polygon_points = np.array(approx).reshape(-1, 2)
+    polygon_error = calculate_polygon_error(points, polygon_points)
+    
+    return polygon_error, polygon_points
+
+def fit_pentagon(points):
+    return fit_regular_polygon(points, 5)
+
+def fit_hexagon(points):
+    return fit_regular_polygon(points, 6)
 
 # Read polylines from CSV
-polylines = read_csv(r'C:\Users\GURDARSH VIRK\OneDrive\Documents\adobe-gensolve-2024\problems\problems\isolated.csv')
+filename = 'problems\problems\isolated.csv'
+polylines = read_csv(filename)
 
 # Fit shapes to polylines and get best fit shapes
-shapes = fit_shapes(polylines)
+shapes, names, errors = fit_shapes(polylines)
+
 # Plot the best fit shapes
-plot(shapes)
+plot(shapes, filename.split('\\')[-1].replace('.csv', '.png'), names)

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from helper_for_csvs import read_csv, plot
 
 # Example polylines (replace with actual data)
-polylines = read_csv(r'C:\Users\GURDARSH VIRK\OneDrive\Documents\adobe-gensolve-2024\problems\problems\frag0.csv')
+polylines = read_csv(r'problems\problems\frag0.csv')
 
 def merge_polylines(polylines, epsilon=1e-2):
     points = np.vstack(polylines)

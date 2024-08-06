@@ -14,8 +14,8 @@ def flatten_and_convert(nested_list):
     return flattened_list
 
 # Convert input and output polylines
-input_polylines_tensor = flatten_and_convert(read_csv(r'C:\Users\GURDARSH VIRK\OneDrive\Documents\adobe-gensolve-2024\problems\problems\isolated.csv'))
-output_polylines_tensor = flatten_and_convert(read_csv(r'C:\Users\GURDARSH VIRK\OneDrive\Documents\adobe-gensolve-2024\problems\problems\isolated_sol.csv'))
+input_polylines_tensor = flatten_and_convert(read_csv(r'paths/here'))
+output_polylines_tensor = flatten_and_convert(read_csv(r'paths/here'))
 
 class PolylineDataset(Dataset):
     def __init__(self, input_polylines, output_polylines):
