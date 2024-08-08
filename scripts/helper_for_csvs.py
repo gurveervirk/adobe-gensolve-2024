@@ -53,3 +53,13 @@ def plot(paths_XYs, filename, names, symmetries):
     ax.set_aspect('equal')
     plt.savefig(f'misc-outputs/{filename}')
     plt.show()
+
+def plot_simple(paths_XYs, filename):
+    fig, ax = plt.subplots(tight_layout = True, figsize=(8, 8))
+    for i , XYs in enumerate(paths_XYs):
+        c = colours[i % len(colours)]
+        for XY in XYs :
+            ax.plot(XY[: , 0] , XY [: , 1] , c=c , linewidth =2)
+            ax.set_aspect('equal')
+    plt.savefig(f'misc-outputs/{filename}')
+    plt.show()

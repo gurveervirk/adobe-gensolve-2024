@@ -5,6 +5,7 @@ from helper_for_csvs import read_csv, plot
 import cv2
 from scipy.interpolate import splev, splrep
 import scipy
+from sklearn.linear_model import LinearRegression
 
 def calculate_polygon_error(original_points, fitted_points):
     fitted_polygon = Polygon(fitted_points).exterior
@@ -81,13 +82,36 @@ def fit_shape(points):
 def fit_line(points):
     x = points[:, 0]
     y = points[:, 1]
-    A = np.vstack([x, np.ones(len(x))]).T
-    m, c = np.linalg.lstsq(A, y, rcond=None)[0]
-    line = m * x + c
-    line_points = np.column_stack((x, line))
-    error = calculate_polygon_error(points, line_points)
-    symmetry_lines = [(m, c)]
-    return error, line_points, symmetry_lines
+    
+    # Fit y on x
+    X_y_on_x = x.reshape(-1, 1)
+    model_y_on_x = LinearRegression().fit(X_y_on_x, y)
+    m_y_on_x = model_y_on_x.coef_[0]
+    c_y_on_x = model_y_on_x.intercept_
+    line_y_on_x = m_y_on_x * x + c_y_on_x
+    line_points_y_on_x = np.column_stack((x, line_y_on_x))
+    error_y_on_x = calculate_polygon_error(points, line_points_y_on_x)
+    
+    # Fit x on y
+    X_x_on_y = y.reshape(-1, 1)
+    model_x_on_y = LinearRegression().fit(X_x_on_y, x)
+    m_x_on_y = model_x_on_y.coef_[0]
+    c_x_on_y = model_x_on_y.intercept_
+    line_x_on_y = (x - c_x_on_y) / m_x_on_y
+    line_points_x_on_y = np.column_stack((line_x_on_y, y))
+    error_x_on_y = calculate_polygon_error(points, line_points_x_on_y)
+    
+    # Choose the best fit
+    if error_y_on_x < error_x_on_y:
+        best_error = error_y_on_x
+        best_line_points = line_points_y_on_x
+        best_symmetry_lines = [(m_y_on_x, c_y_on_x)]
+    else:
+        best_error = error_x_on_y
+        best_line_points = line_points_x_on_y
+        best_symmetry_lines = [(1 / m_x_on_y, -c_x_on_y / m_x_on_y)]
+    
+    return best_error, best_line_points, best_symmetry_lines
 
 def fit_circle(points):
     points = np.array(points)

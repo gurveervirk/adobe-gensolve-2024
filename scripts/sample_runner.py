@@ -1,8 +1,5 @@
-from helper_for_csvs import read_csv, plot
+from helper_for_csvs import read_csv, plot_simple
 
-csv_path = r'problems\problems\isolated.csv'
-paths = read_csv(csv_path)
-
-# print(paths)
-# print(len(paths))
-plot(paths)
+filename = r'problems\problems\occlusion1_sol.csv'
+paths = read_csv(filename)
+plot_simple(paths, filename.split('\\')[-1].split('.')[0] + '.png')
