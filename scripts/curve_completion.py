@@ -32,15 +32,19 @@ def interpolate_missing_parts(polyline):
     return np.array(interpolated_points)
 
 # Load polyline data
-polyline = read_csv(r'problems\problems\occlusion1.csv')[0][0]
+path = r'problems\problems\occlusion2.csv'
+polylines = read_csv(path)
+curve_to_complete = polylines[4][0]
+
+name = path.split("\\")[-1][:-4]
 
 # Interpolate missing parts using convex hull and B-spline
-completed_polyline = interpolate_missing_parts(polyline)
+completed_polyline = interpolate_missing_parts(curve_to_complete)
 
 # Plot the original polyline and the completed polyline
 fig, ax = plt.subplots()
-ax.plot(polyline[:, 0], polyline[:, 1], 'g-', label='Original Polyline', linewidth=4)
+ax.plot(curve_to_complete[:, 0], curve_to_complete[:, 1], 'g-', label='Original Polyline', linewidth=4)
 ax.plot(completed_polyline[:, 0], completed_polyline[:, 1], 'purple', label='Completed Polyline', linewidth=2)
 ax.legend()
-plt.savefig('misc-outputs/curve_completion_occlusion1.png')
+plt.savefig('misc-outputs/' + f'curve_completion_{name}.png')
 plt.show()
