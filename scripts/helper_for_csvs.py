@@ -16,7 +16,7 @@ def read_csv(csv_path):
         path_XYs . append ( XYs )
     return path_XYs
 
-def plot(paths_XYs, filename, names, symmetries):
+def plot(paths_XYs, filename, names, symmetries=[]):
     fig, ax = plt.subplots(tight_layout=True, figsize=(8, 8))
     ind = 0
     colours = ['b', 'g', 'r', 'c', 'm', 'y', 'k']

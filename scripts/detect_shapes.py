@@ -42,10 +42,11 @@ def fit_shapes(polyline_group):
 
 def fit_shape(points):
     # Ensure points is a numpy array
+    print(points)
     points = np.array(points)
     
     # Fit different shapes and calculate errors
-    line_error, line_points, line_symmetry = fit_line(points)
+    # line_error, line_points, line_symmetry = fit_line(points)
     circle_error, circle_points, circle_symmetry = fit_circle(points)
     rectangle_error, rectangle_points, rectangle_symmetry = fit_rectangle(points)
     ellipse_error, ellipse_points, ellipse_symmetry = fit_ellipse(points)
@@ -57,7 +58,7 @@ def fit_shape(points):
     
     # Collect all errors and their corresponding points
     errors = [
-        ["line", line_error, line_points, line_symmetry],
+        # ["line", line_error, line_points, line_symmetry],
         ["circle", circle_error, circle_points, circle_symmetry],
         ["rectangle", rectangle_error, rectangle_points, rectangle_symmetry],
         ["ellipse", ellipse_error, ellipse_points, ellipse_symmetry],
@@ -73,7 +74,7 @@ def fit_shape(points):
     best_points = errors[0][2]
     symmetry_lines = errors[0][3]
 
-    print(f"Errors: line={line_error:.2f} circle={circle_error:.2f}, rectangle={rectangle_error:.9f}, ellipse={ellipse_error:.2f}, "
+    print(f"Errors: circle={circle_error:.2f}, rectangle={rectangle_error:.9f}, ellipse={ellipse_error:.2f}, "
           f"star={star_error:.2f}, triangle={triangle_error:.2f}, square={square_error:.9f}, "
           f"pentagon={pentagon_error:.2f}, hexagon={hexagon_error:.2f}")
     
@@ -217,25 +218,25 @@ def fit_ellipse(points):
     ellipse_error = calculate_polygon_error(points, ellipse_points)
     
     # Calculate symmetry lines
-    multi_point = MultiPoint(ellipse_points)
-    rect = multi_point.minimum_rotated_rectangle
-    rect_points = np.array(rect.exterior.coords)
+    # multi_point = MultiPoint(ellipse_points)
+    # rect = multi_point.minimum_rotated_rectangle
+    # rect_points = np.array(rect.exterior.coords)
 
     symmetry_lines = []
-    for i in range(2):
-        p1 = rect_points[i]
-        p2 = rect_points[(i + 1) % len(rect_points)]
-        p3 = rect_points[(i + 2) % len(rect_points)]
-        p4 = rect_points[(i + 3) % len(rect_points)]
-        midpoint1 = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2]
-        midpoint2 = [(p3[0] + p4[0]) / 2, (p3[1] + p4[1]) / 2]
-        if abs(midpoint1[0] - midpoint2[0]) < 1e-6:
-            slope = np.inf
-            intercept = midpoint1[0]
-        else:
-            slope = (midpoint2[1] - midpoint1[1]) / (midpoint2[0] - midpoint1[0])
-            intercept = midpoint1[1] - slope * midpoint1[0]
-        symmetry_lines.append((slope, intercept))
+    # for i in range(2):
+    #     p1 = rect_points[i]
+    #     p2 = rect_points[(i + 1) % len(rect_points)]
+    #     p3 = rect_points[(i + 2) % len(rect_points)]
+    #     p4 = rect_points[(i + 3) % len(rect_points)]
+    #     midpoint1 = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2]
+    #     midpoint2 = [(p3[0] + p4[0]) / 2, (p3[1] + p4[1]) / 2]
+    #     if abs(midpoint1[0] - midpoint2[0]) < 1e-6:
+    #         slope = np.inf
+    #         intercept = midpoint1[0]
+    #     else:
+    #         slope = (midpoint2[1] - midpoint1[1]) / (midpoint2[0] - midpoint1[0])
+    #         intercept = midpoint1[1] - slope * midpoint1[0]
+    #     symmetry_lines.append((slope, intercept))
     
     return ellipse_error, ellipse_points, symmetry_lines
 
