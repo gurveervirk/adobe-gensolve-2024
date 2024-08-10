@@ -76,4 +76,4 @@ def sobel_edge_detection(image_path, output_csv_path):
     df.to_csv(output_csv_path, index=False)
 
 # Example usage
-canny_edge_detection(r'problems\problems\occlusion1_rec.png', 'polylines.csv')
+canny_edge_detection(r'misc-outputs\frag2.png', 'polylines.csv')

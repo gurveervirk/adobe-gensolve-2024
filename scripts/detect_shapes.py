@@ -59,24 +59,20 @@ def fit_shape(points):
     
     # Fit different shapes and calculate errors
     line_error, line_points, line_symmetry = fit_line(points)
-    circle_error, circle_points, circle_symmetry = fit_circle(points)
     rectangle_error, rectangle_points, rectangle_symmetry = fit_rectangle(points)
     ellipse_error, ellipse_points, ellipse_symmetry = fit_ellipse(points)
     star_error, star_points, star_symmetry = fit_star(points)
     triangle_error, triangle_points, triangle_symmetry = fit_triangle(points)
-    square_error, square_points, square_symmetry = fit_square(points)
     pentagon_error, pentagon_points, pentagon_symmetry = fit_pentagon(points)
     hexagon_error, hexagon_points, hexagon_symmetry = fit_hexagon(points)
     
     # Collect all errors and their corresponding points
     errors = [
         ["line", line_error, line_points, line_symmetry],
-        ["circle", circle_error, circle_points, circle_symmetry],
-        ["rectangle", rectangle_error, rectangle_points, rectangle_symmetry],
-        ["ellipse", ellipse_error, ellipse_points, ellipse_symmetry],
+        ["rectangle/square", rectangle_error, rectangle_points, rectangle_symmetry],
+        ["ellipse/circle", ellipse_error, ellipse_points, ellipse_symmetry],
         ["star", star_error, star_points, star_symmetry],
         ["triangle", triangle_error, triangle_points, triangle_symmetry],
-        ["square", square_error, square_points, square_symmetry],
         ["pentagon", pentagon_error, pentagon_points, pentagon_symmetry],
         ["hexagon", hexagon_error, hexagon_points, hexagon_symmetry]
     ]
@@ -86,8 +82,8 @@ def fit_shape(points):
     best_points = errors[0][2]
     symmetry_lines = errors[0][3]
 
-    print(f"Errors: line={line_error:.2f} circle={circle_error:.2f}, rectangle={rectangle_error:.9f}, ellipse={ellipse_error:.2f}, "
-          f"star={star_error:.2f}, triangle={triangle_error:.2f}, square={square_error:.9f}, "
+    print(f"Errors: line={line_error:.2f}, rectangle={rectangle_error:.9f}, ellipse={ellipse_error:.2f}, "
+          f"star={star_error:.2f}, triangle={triangle_error:.2f}, "
           f"pentagon={pentagon_error:.2f}, hexagon={hexagon_error:.2f}")
     
     return best_points, lowest_error, best_shape, symmetry_lines
@@ -125,68 +121,6 @@ def fit_line(points):
         best_symmetry_lines = [(1 / m_x_on_y, -c_x_on_y / m_x_on_y)]
     
     return best_error, best_line_points, best_symmetry_lines
-
-def fit_circle(points):
-    points = np.array(points)
-    
-    # Calculate initial guess for circle center and radius
-    x_m = np.mean(points[:, 0])
-    y_m = np.mean(points[:, 1])
-    center_initial = np.array([x_m, y_m])
-    
-    def calc_R(c):
-        """Calculate the distance of each data point from the center c (xc, yc)."""
-        return np.sqrt((points[:, 0] - c[0])**2 + (points[:, 1] - c[1])**2)
-    
-    def objective_function(c):
-        """Calculate the algebraic distance between the data points and the mean circle centered at c."""
-        Ri = calc_R(c)
-        return Ri - Ri.mean()
-    
-    center_optimized = least_squares(objective_function, center_initial).x
-    radius_optimized = calc_R(center_optimized).mean()
-    
-    # Generate fitted circle points
-    circle_points = np.array([
-        [center_optimized[0] + radius_optimized * np.cos(theta), 
-         center_optimized[1] + radius_optimized * np.sin(theta)]
-        for theta in np.linspace(0, 2 * np.pi, 1000)
-    ])
-    
-    circle_error = calculate_polygon_error(points, circle_points)
-
-    # Calculate symmetry lines
-    multi_point = MultiPoint(circle_points)
-    rect = multi_point.minimum_rotated_rectangle
-    rect_points = np.array(rect.exterior.coords)
-
-    symmetry_lines = []
-    for i in range(2):
-        p1 = rect_points[i]
-        p2 = rect_points[(i + 1) % len(rect_points)]
-        p3 = rect_points[(i + 2) % len(rect_points)]
-        p4 = rect_points[(i + 3) % len(rect_points)]
-        midpoint1 = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2]
-        midpoint2 = [(p3[0] + p4[0]) / 2, (p3[1] + p4[1]) / 2]
-        if abs(midpoint1[0] - midpoint2[0]) < 1e-6:
-            slope = np.inf
-            intercept = midpoint1[0]
-        else:
-            slope = (midpoint2[1] - midpoint1[1]) / (midpoint2[0] - midpoint1[0])
-            intercept = midpoint1[1] - slope * midpoint1[0]
-        symmetry_lines.append((slope, intercept))
-
-        midpoint1 = [(p1[0] + p3[0]) / 2, (p1[1] + p3[1]) / 2]
-        midpoint2 = [(p2[0] + p4[0]) / 2, (p2[1] + p4[1]) / 2]
-        if abs(midpoint1[0] - midpoint2[0]) < 1e-6:
-            slope = np.inf
-            intercept = midpoint1[0]
-        else:
-            slope = (midpoint2[1] - midpoint1[1]) / (midpoint2[0] - midpoint1[0])
-            intercept = midpoint1[1] - slope * midpoint1[0]
-        symmetry_lines.append((slope, intercept))
-    
-    return circle_error, circle_points, symmetry_lines
 
 def fit_rectangle(points):
     multi_point = MultiPoint(points)
@@ -334,47 +268,6 @@ def fit_triangle(points):
     symmetry_lines = get_regular_polygon_symmetry(triangle_points, 3)
     return triangle_error, triangle_points, symmetry_lines
 
-def fit_square(points):
-    multi_point = MultiPoint(points)
-    min_rectangle = multi_point.minimum_rotated_rectangle
-    min_rectangle_points = np.array(min_rectangle.exterior.coords)
-    
-    edge_lengths = np.linalg.norm(np.diff(min_rectangle_points, axis=0), axis=1)
-    if not np.allclose(edge_lengths, edge_lengths[0], rtol=0.1):
-        return float('inf'), points, []
-    
-    square_points = min_rectangle_points[:4]
-    square_error = calculate_polygon_error(points, square_points)
-
-    # Calculate symmetry lines
-    symmetry_lines = []
-    for i in range(2):
-        p1 = square_points[i]
-        p2 = square_points[(i + 1) % len(square_points)]
-        p3 = square_points[(i + 2) % len(square_points)]
-        p4 = square_points[(i + 3) % len(square_points)]
-        midpoint1 = [(p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2]
-        midpoint2 = [(p3[0] + p4[0]) / 2, (p3[1] + p4[1]) / 2]
-        if abs(midpoint1[0] - midpoint2[0]) < 1e-6:
-            slope = np.inf
-            intercept = midpoint1[0]
-        else:
-            slope = (midpoint2[1] - midpoint1[1]) / (midpoint2[0] - midpoint1[0])
-            intercept = midpoint1[1] - slope * midpoint1[0]
-        symmetry_lines.append((slope, intercept))
-
-        midpoint1 = [(p1[0] + p3[0]) / 2, (p1[1] + p3[1]) / 2]
-        midpoint2 = [(p2[0] + p4[0]) / 2, (p2[1] + p4[1]) / 2]
-        if abs(midpoint1[0] - midpoint2[0]) < 1e-6:
-            slope = np.inf
-            intercept = midpoint1[0]
-        else:
-            slope = (midpoint2[1] - midpoint1[1]) / (midpoint2[0] - midpoint1[0])
-            intercept = midpoint1[1] - slope * midpoint1[0]
-        symmetry_lines.append((slope, intercept))
-    
-    return square_error, square_points, symmetry_lines
-
 def fit_pentagon(points):
     hull = cv2.convexHull(np.array(points, dtype=np.float32))
     if len(hull) != 5:
@@ -453,7 +346,8 @@ def fit_b_spline(points, degree=3):
     return spline_error, spline_points, symmetries
 
 # Sample usage
-# filename = 'problems/problems/isolated.csv'
-# polylines = read_csv(filename)
-# shapes, names, symmetries = fit_shapes(polylines)
-# plot(shapes, filename.split('/')[-1][:-4] + '.png', names, symmetries)
+# if __name__ == '__main__':
+#     filename = 'problems/problems/isolated.csv'
+#     polylines = read_csv(filename)
+#     shapes, names, symmetries = fit_shapes(polylines)
+#     plot(shapes, filename.split('/')[-1][:-4] + '.png', names, symmetries)

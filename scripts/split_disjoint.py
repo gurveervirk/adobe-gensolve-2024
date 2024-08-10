@@ -2,12 +2,64 @@ import numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import LineString
 from helper import read_csv
+from detect_shapes import fit_line
+
+def points_are_close(p1, p2, tol=1e-5):
+    distance = np.linalg.norm(np.array(p1) - np.array(p2))
+    return distance < tol
+
+def calculate_slope(p1, p2):
+    """ Calculate the slope of the line segment between points p1 and p2 """
+    if p2[0] == p1[0]:  # Handle vertical lines
+        return np.inf
+    return (p2[1] - p1[1]) / (p2[0] - p1[0])
+
+def calculate_angle(slope):
+    """ Calculate the angle of the slope with respect to the x-axis """
+    return np.arctan(slope) * (180 / np.pi)  # Convert radians to degrees
+
+def angle_difference(angle1, angle2):
+    """ Calculate the smallest difference between two angles """
+    diff = abs(angle1 - angle2)
+    return min(diff, 360 - diff)  # Adjust for angle wrap-around
 
 def split_polylines_to_disjoint(polylines):
-    disjoint_polylines = []
+    lines = [poly.tolist() for polyline in polylines for poly in polyline]
+
+    while True:
+        f = False
+        for i in range(len(lines)):
+            cur_line = lines[i]
+            if len(cur_line) < 4:
+                continue
+            for j in range(len(cur_line) - 2):
+                p1, p2, p3 = cur_line[j], cur_line[j+1], cur_line[j+2]
+                angle_diff = angle_difference(calculate_angle(calculate_slope(p1, p2)), calculate_angle(calculate_slope(p2, p3)))
+                if angle_diff >= 30:
+                    new_line_1 = cur_line[:j+2]
+                    new_line_2 = cur_line[j+2:]
+                    if len(new_line_1) < 4:
+                        e1 = 0.9
+                    else:
+                        e1, _, _ = fit_line(np.array(new_line_1))
+                    if len(new_line_2) < 4:
+                        e2 = 0.9
+                    else:
+                        e2, _, _ = fit_line(np.array(new_line_2))
+                    if e1 < 5 and e2 < 5:
+                        lines[i] = new_line_1
+                        lines.insert(i+1, new_line_2)
+                        f = True
+                        break
+            if f:
+                break
+        
+        if not f:
+            break
     
+    disjoint_polylines = []
     # Convert polylines to shapely LineStrings
-    lines = [LineString(poly) for polyline in polylines for poly in polyline]
+    lines = [LineString(np.array(polyline)) for polyline in lines if len(polyline) > 1]
     disjoint_polylines = []
     pairs_checked = set()
 
@@ -40,25 +92,6 @@ def split_polylines_to_disjoint(polylines):
             disjoint_polylines.append(np.array(line.coords))
 
     return disjoint_polylines
-
-def points_are_close(p1, p2, tol=1e-5):
-    distance = np.linalg.norm(np.array(p1) - np.array(p2))
-    return distance < tol
-
-def calculate_slope(p1, p2):
-    """ Calculate the slope of the line segment between points p1 and p2 """
-    if p2[0] == p1[0]:  # Handle vertical lines
-        return np.inf
-    return (p2[1] - p1[1]) / (p2[0] - p1[0])
-
-def calculate_angle(slope):
-    """ Calculate the angle of the slope with respect to the x-axis """
-    return np.arctan(slope) * (180 / np.pi)  # Convert radians to degrees
-
-def angle_difference(angle1, angle2):
-    """ Calculate the smallest difference between two angles """
-    diff = abs(angle1 - angle2)
-    return min(diff, 360 - diff)  # Adjust for angle wrap-around
 
 def count_close_points(polylines, point, tolerance=1e-5):
     count = -1
@@ -238,7 +271,7 @@ def extend_and_connect_polylines(disjoint_polylines, angle_threshold=30):
     return final_polylines
 
 # Sample usage
-# path = r'problems\problems\occlusion2.csv'
+# path = r'problems\problems\frag2.csv'
 # polylines = read_csv(path)
 # disjoint_polylines = split_polylines_to_disjoint(polylines)
 # extended_polylines = extend_and_connect_polylines(disjoint_polylines)
@@ -252,7 +285,7 @@ def extend_and_connect_polylines(disjoint_polylines, angle_threshold=30):
 
 # for i, polyline in enumerate(extended_polylines):
 #     plt.plot(polyline[:, 0], polyline[:, 1], label=f'Polyline {i}')
-#     midpoint = polyline[len(polyline)//2]
+#     midpoint = np.mean(polyline, axis=0)
 #     plt.text(midpoint[0], midpoint[1], f'{i}', fontsize=12)
     
 # plt.show()

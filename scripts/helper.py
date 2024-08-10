@@ -51,7 +51,7 @@ def plot(paths_XYs, filename, names, symmetries):
                 ax.plot(x_vals, y_vals, c + '--', linewidth=1)
         
     ax.set_aspect('equal')
-    plt.savefig(f'misc-outputs/{filename}')
+    # plt.savefig(f'misc-outputs/{filename}')
     plt.show()
 
 def plot_simple(paths_XYs, filename=''):
@@ -65,5 +65,6 @@ def plot_simple(paths_XYs, filename=''):
             ax.set_aspect('equal')
             average_XY = np.mean(XY, axis=0)
             ax.text(average_XY[0], average_XY[1], str(i) + ' ' + str(j), fontsize=12, color=c, ha='center')
-    plt.savefig(f'misc-outputs/{filename}')
+    # plt.savefig(f'misc-outputs/{filename}')
     plt.show()
+    
