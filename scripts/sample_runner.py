@@ -1,4 +1,4 @@
-from helper_for_csvs import read_csv, plot_simple
+from helper import read_csv, plot_simple
 
 filename = r'problems\problems\occlusion2.csv'
 paths = read_csv(filename)

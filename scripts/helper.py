@@ -56,13 +56,12 @@ def plot(paths_XYs, filename, names, symmetries):
 
 def plot_simple(paths_XYs, filename=''):
     fig, ax = plt.subplots(tight_layout=True, figsize=(8, 8))
+    ind = 0
     for i, XYs in enumerate(paths_XYs):
-        c = colours[i % len(colours)]
         for j, XY in enumerate(XYs):
-            if i == 2:
-                ax.plot(XY[:, 0], XY[:, 1], c=c, linewidth=4)
-            else:
-                ax.plot(XY[:, 0], XY[:, 1], c=c, linewidth=2)
+            c = colours[ind % len(colours)]
+            ind += 1
+            ax.plot(XY[:, 0], XY[:, 1], c=c, linewidth=2)
             ax.set_aspect('equal')
             average_XY = np.mean(XY, axis=0)
             ax.text(average_XY[0], average_XY[1], str(i) + ' ' + str(j), fontsize=12, color=c, ha='center')

@@ -3,7 +3,7 @@ from sklearn.cluster import DBSCAN
 from shapely.geometry import LineString
 from scipy.interpolate import splprep, splev
 import matplotlib.pyplot as plt
-from helper_for_csvs import read_csv, plot
+from helper import read_csv, plot
 
 # Example polylines (replace with actual data)
 polylines = read_csv(r'problems\problems\frag0.csv')

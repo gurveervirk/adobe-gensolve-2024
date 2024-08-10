@@ -1,9 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import LineString
-from helper_for_csvs import read_csv
-from scipy.interpolate import CubicSpline
-from scipy.optimize import curve_fit
+from helper import read_csv
 
 def split_polylines_to_disjoint(polylines):
     disjoint_polylines = []
@@ -237,21 +235,22 @@ def extend_and_connect_polylines(disjoint_polylines, angle_threshold=30):
 
     return final_polylines
 
-path = r'problems\problems\occlusion2.csv'
-polylines = read_csv(path)
-disjoint_polylines = split_polylines_to_disjoint(polylines)
-extended_polylines = extend_and_connect_polylines(disjoint_polylines)
+# Sample usage
+# path = r'problems\problems\occlusion2.csv'
+# polylines = read_csv(path)
+# disjoint_polylines = split_polylines_to_disjoint(polylines)
+# extended_polylines = extend_and_connect_polylines(disjoint_polylines)
 
-print(f"Original polylines: {len(polylines)}")
-print(f"Disjoint polylines: {len(disjoint_polylines)}")
-print(f"Extended polylines: {len(extended_polylines)}")
+# print(f"Original polylines: {len(polylines)}")
+# print(f"Disjoint polylines: {len(disjoint_polylines)}")
+# print(f"Extended polylines: {len(extended_polylines)}")
 
-# Visualization
-plt.figure()
+# # Visualization
+# plt.figure()
 
-for i, polyline in enumerate(extended_polylines):
-    plt.plot(polyline[:, 0], polyline[:, 1], label=f'Polyline {i}')
-    midpoint = polyline[len(polyline)//2]
-    plt.text(midpoint[0], midpoint[1], f'{i}', fontsize=12)
+# for i, polyline in enumerate(extended_polylines):
+#     plt.plot(polyline[:, 0], polyline[:, 1], label=f'Polyline {i}')
+#     midpoint = polyline[len(polyline)//2]
+#     plt.text(midpoint[0], midpoint[1], f'{i}', fontsize=12)
     
-plt.show()
+# plt.show()

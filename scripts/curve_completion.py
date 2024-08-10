@@ -1,50 +1,36 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.spatial import ConvexHull, distance
-from scipy.interpolate import make_interp_spline
-from helper_for_csvs import read_csv
+from split_disjoint import split_polylines_to_disjoint, extend_and_connect_polylines
+from helper import read_csv, plot_simple
+from matplotlib import pyplot as plt
+from detect_shapes import fit_shape, calculate_polygon_error
 
-def interpolate_missing_parts(polyline):
-    # Convex Hull to get boundary points
-    hull = ConvexHull(polyline)
-    hull_points = polyline[hull.vertices]
-    hull_points = np.roll(hull_points, -1, axis=0)  # Roll the points to get a continuous curve (one end to another)
-
-    # Fit B-spline to the convex hull points
-    t = np.linspace(0, 1, len(hull_points))
-    spl = make_interp_spline(t, hull_points, k=3)  # k=3 for cubic spline
-    t_new = np.linspace(0, 2, 600)
-    threshold = 1  # Distance threshold to stop the process
-    interpolated_points = []
-    flag = False  # Initialize flag
-
-    # Iteratively generate new points and check distance
-    for t_val in t_new:
-        new_point = spl(t_val)
-        min_dist = np.min([distance.euclidean(new_point, point) for point in hull_points])
-        interpolated_points.append(new_point)
-        if min_dist > threshold:
-            flag = True  # Set flag to True when new point is outside original hull_points
-        
-        if flag and min_dist < threshold:
-            break 
-    
-    return np.array(interpolated_points)
-
-# Load polyline data
-path = r'problems\problems\occlusion2.csv'
+# Load the data
+path = r'problems\problems\occlusion1.csv'
 polylines = read_csv(path)
-curve_to_complete = polylines[4][0]
 
-name = path.split("\\")[-1][:-4]
+# Split into disjoint polylines
+disjoint_polylines = split_polylines_to_disjoint(polylines)
 
-# Interpolate missing parts using convex hull and B-spline
-completed_polyline = interpolate_missing_parts(curve_to_complete)
+# Connect disjoint polylines naturally
+connected_polylines = extend_and_connect_polylines(disjoint_polylines)
 
-# Plot the original polyline and the completed polyline
-fig, ax = plt.subplots()
-ax.plot(curve_to_complete[:, 0], curve_to_complete[:, 1], 'g-', label='Original Polyline', linewidth=4)
-ax.plot(completed_polyline[:, 0], completed_polyline[:, 1], 'purple', label='Completed Polyline', linewidth=2)
-ax.legend()
-plt.savefig('misc-outputs/' + f'curve_completion_{name}.png')
-plt.show()
+# Try fitting shapes to the connected polylines for completion
+def complete_curves(polylines):
+    result = []
+    for polyline in polylines:
+        if result:
+            flag = False
+            for fitted_shapes in result:
+                if calculate_polygon_error(polyline, fitted_shapes) < 10:
+                    flag = True
+                    break
+            if flag:
+                continue
+        
+        best_points, lowest_error, best_shape, symmetry_lines = fit_shape(polyline)
+        if lowest_error < 10:
+            result.append(best_points)
+            
+    return result
+
+completed_polylines = complete_curves(connected_polylines)
+plot_simple([completed_polylines], path.split('\\')[-1].split('.')[0] + '_completed.png')

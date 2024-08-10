@@ -1,7 +1,7 @@
 import numpy as np
 from shapely.geometry import Polygon, Point, MultiPoint
 from scipy.optimize import least_squares
-from helper_for_csvs import read_csv, plot
+from helper import read_csv, plot
 import cv2
 from scipy.interpolate import splev, splrep
 import scipy
@@ -137,7 +137,7 @@ def fit_circle(points):
     circle_points = np.array([
         [center_optimized[0] + radius_optimized * np.cos(theta), 
          center_optimized[1] + radius_optimized * np.sin(theta)]
-        for theta in np.linspace(0, 2 * np.pi, 100)
+        for theta in np.linspace(0, 2 * np.pi, 1000)
     ])
     
     circle_error = calculate_polygon_error(points, circle_points)
@@ -211,7 +211,30 @@ def fit_ellipse(points):
     axes = ellipse[1]
     angle = ellipse[2]
 
-    ellipse_points = cv2.ellipse2Poly((int(center[0]), int(center[1])), (int(axes[0] // 2), int(axes[1] // 2)), int(angle), 0, 360, 1)
+    # ellipse_points = cv2.ellipse2Poly((int(center[0]), int(center[1])), (int(axes[0] // 2), int(axes[1] // 2)), int(angle), 0, 360, 1)
+    # Convert angle from OpenCV to radians
+    angle_rad = np.deg2rad(angle)
+
+    # Semi-major and semi-minor axes
+    a = axes[0] / 2
+    b = axes[1] / 2
+
+    # Generate more points on the ellipse using parametric equations
+    num_points = 1000  # Increase this number for more points
+    t = np.linspace(0, 2 * np.pi, num_points)
+    ellipse_points = np.zeros((num_points, 2), dtype=np.float32)
+    
+    for i in range(num_points):
+        x = a * np.cos(t[i])
+        y = b * np.sin(t[i])
+        
+        # Rotate the points
+        x_rot = x * np.cos(angle_rad) - y * np.sin(angle_rad)
+        y_rot = x * np.sin(angle_rad) + y * np.cos(angle_rad)
+        
+        # Translate to the center
+        ellipse_points[i] = [center[0] + x_rot, center[1] + y_rot]
+    
     ellipse_points = np.array(ellipse_points, dtype=np.float32)
     
     ellipse_error = calculate_polygon_error(points, ellipse_points)
@@ -416,8 +439,8 @@ def fit_b_spline(points, degree=3):
     _, _, symmetries = fit_line(spline_points)
     return spline_error, spline_points, symmetries
 
-# Main code
-filename = 'problems/problems/isolated.csv'
-polylines = read_csv(filename)
-shapes, names, symmetries = fit_shapes(polylines)
-plot(shapes, filename.split('/')[-1][:-4] + '.png', names, symmetries)
+# Sample usage
+# filename = 'problems/problems/isolated.csv'
+# polylines = read_csv(filename)
+# shapes, names, symmetries = fit_shapes(polylines)
+# plot(shapes, filename.split('/')[-1][:-4] + '.png', names, symmetries)

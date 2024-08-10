@@ -1,4 +1,4 @@
-from helper_for_csvs import read_csv, plot
+from helper import read_csv, plot
 from shapely.geometry import LineString, Point, Polygon
 from matplotlib import pyplot as plt
 import numpy as np
