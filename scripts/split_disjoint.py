@@ -9,15 +9,17 @@ def split_polylines_to_disjoint(polylines):
     # Convert polylines to shapely LineStrings
     lines = [LineString(poly) for polyline in polylines for poly in polyline]
     disjoint_polylines = []
+    pairs_checked = set()
 
     while True:
         f = False
         for i in range(len(lines)):
             for j in range(i+1, len(lines)):
-                if lines[i].intersects(lines[j]) and not lines[i].touches(lines[j]):
+                if (i, j) not in pairs_checked and lines[i].intersects(lines[j]) and not lines[i].touches(lines[j]):
+                    pairs_checked.add((i, j))
                     intersection = lines[i].intersection(lines[j])
-                    new_i = lines[i].difference(lines[j])
-                    new_j = lines[j].difference(lines[i])
+                    new_i = lines[i].difference(intersection)
+                    new_j = lines[j].difference(intersection)
                     lines[i] = new_i
                     lines[j] = new_j
                     lines.append(intersection)

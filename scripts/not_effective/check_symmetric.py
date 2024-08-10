@@ -17,7 +17,7 @@ def find_symmetry_via_fitted_lines(points):
 
     # Fit x = my + c
     model_x_on_y = LinearRegression()
-    model_x_on_y.fit(y.reshape(-1, 1), x)
+    model_x_on_y.fit(y.reshape(-1, 1), points[:, 0])
     slope_x_on_y = model_x_on_y.coef_[0]
     intercept_x_on_y = model_x_on_y.intercept_
 
@@ -48,7 +48,7 @@ def find_symmetry_via_fitted_lines(points):
         return np.array(reflected_points)
 
     reflected_points_y_on_x = reflect_points_y_on_x(points, slope_y_on_x, intercept_y_on_x)
-    reflected_points_x_on_y = reflect_points_x_on_y(points, slope_x_on_y, intercept_x_on_y).squeeze(2)
+    reflected_points_x_on_y = reflect_points_x_on_y(points, slope_x_on_y, intercept_x_on_y)
 
     # Create polygons using the reflected points
     polygon_y_on_x = Polygon(reflected_points_y_on_x)
@@ -61,15 +61,51 @@ def find_symmetry_via_fitted_lines(points):
     mean_distance_y_on_x = np.mean(distances_y_on_x)
     mean_distance_x_on_y = np.mean(distances_x_on_y)
 
-    print("Mean distance between points and their reflections across y = mx + c:", mean_distance_y_on_x)
-    print("Mean distance between points and their reflections across x = my + c:", mean_distance_x_on_y)
-
     symmetry_threshold = 1.0  # Adjust as needed
 
     y_on_x_symmetry = mean_distance_y_on_x < symmetry_threshold
     x_on_y_symmetry = mean_distance_x_on_y < symmetry_threshold
 
-    return y_on_x_symmetry, x_on_y_symmetry, (slope_y_on_x, intercept_y_on_x), (slope_x_on_y, intercept_x_on_y), reflected_points_y_on_x, reflected_points_x_on_y
+    # Calculate centroid
+    centroid = np.mean(points, axis=0)
+
+    # Calculate perpendicular lines from centroid
+    perp_slope_y_on_x = -1 / slope_y_on_x
+    perp_intercept_y_on_x = centroid[1] - perp_slope_y_on_x * centroid[0]
+
+    perp_slope_x_on_y = -1 / slope_x_on_y
+    perp_intercept_x_on_y = centroid[0] - perp_slope_x_on_y * centroid[1]
+
+    # Reflect points across perpendicular lines
+    reflected_points_perp_y_on_x = reflect_points_y_on_x(points, perp_slope_y_on_x, perp_intercept_y_on_x)
+    reflected_points_perp_x_on_y = reflect_points_x_on_y(points, perp_slope_x_on_y, perp_intercept_x_on_y)
+
+    # Create polygons using the reflected points
+    polygon_perp_y_on_x = Polygon(reflected_points_perp_y_on_x)
+    polygon_perp_x_on_y = Polygon(reflected_points_perp_x_on_y)
+
+    # Calculate mean distances
+    distances_perp_y_on_x = [polygon_perp_y_on_x.exterior.distance(Point(p)) for p in points]
+    distances_perp_x_on_y = [polygon_perp_x_on_y.exterior.distance(Point(p)) for p in points]
+
+    mean_distance_perp_y_on_x = np.mean(distances_perp_y_on_x)
+    mean_distance_perp_x_on_y = np.mean(distances_perp_x_on_y)
+
+    perp_y_on_x_symmetry = mean_distance_perp_y_on_x < symmetry_threshold
+    perp_x_on_y_symmetry = mean_distance_perp_x_on_y < symmetry_threshold
+
+    # Return symmetry lines that are truly symmetry lines
+    symmetry_lines = []
+    if y_on_x_symmetry:
+        symmetry_lines.append((slope_y_on_x, intercept_y_on_x))
+    if x_on_y_symmetry:
+        symmetry_lines.append((slope_x_on_y, intercept_x_on_y))
+    if perp_y_on_x_symmetry:
+        symmetry_lines.append((perp_slope_y_on_x, perp_intercept_y_on_x))
+    if perp_x_on_y_symmetry:
+        symmetry_lines.append((perp_slope_x_on_y, perp_intercept_x_on_y))
+
+    return symmetry_lines
 
 # Example usage
 # points = read_csv(r'problems\problems\vase.csv')[0][0]

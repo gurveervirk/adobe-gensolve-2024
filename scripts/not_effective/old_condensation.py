@@ -1,7 +1,7 @@
 from shapely.geometry import LineString, Polygon, MultiPolygon, Point
 from shapely.ops import polygonize, unary_union
 # from shapely import GeometryCollection, node, intersection
-from scripts.helper import read_csv
+from helper import read_csv
 from matplotlib import pyplot as plt
 
 def find_overlaps(paths):

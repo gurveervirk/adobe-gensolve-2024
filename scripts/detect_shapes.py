@@ -6,6 +6,11 @@ import cv2
 from scipy.interpolate import splev, splrep
 import scipy
 from sklearn.linear_model import LinearRegression
+from find_reflection_symmetry_line import find_reflection_symmetry_parallel, find_centroid
+
+def points_are_close(p1, p2, tol=1e-5):
+    distance = np.linalg.norm(np.array(p1) - np.array(p2))
+    return distance < tol
 
 def calculate_polygon_error(original_points, fitted_points):
     fitted_polygon = Polygon(fitted_points).exterior
@@ -43,6 +48,14 @@ def fit_shapes(polyline_group):
 def fit_shape(points):
     # Ensure points is a numpy array
     points = np.array(points)
+
+    # Check if the points are already closed and are symmetric
+    if np.all(points[0] == points[-1]) or points_are_close(points[0], points[-1]):
+        # Check if the points are symmetric
+        centroid = find_centroid(points)
+        symmetry_line, error = find_reflection_symmetry_parallel(points, centroid)
+        if error < 1:
+            return points, error, "closed", [symmetry_line]
     
     # Fit different shapes and calculate errors
     line_error, line_points, line_symmetry = fit_line(points)
