@@ -29,9 +29,9 @@ The `curve_completion.py` script is designed to complete incomplete curves by fi
 
 To run:
 
-bash
+```
 python scripts/curve_completion.py
-
+```
 
 ### Curve Extrapolation
 
@@ -39,9 +39,9 @@ The `curve_extrapolation.py` script extrapolates missing parts of a curve using 
 
 To run:
 
-bash
+```
 python scripts/curve_extrapolation.py
-
+```
 
 ### Shape Detection
 
@@ -49,9 +49,9 @@ The `detect_shapes.py` script detects and regularizes different shapes (e.g., li
 
 To run:
 
-bash
+```
 python scripts/detect_shapes.py
-
+```
 
 ### Reflection Symmetry Detection
 
@@ -59,9 +59,9 @@ The `find_reflection_symmetry_line.py` script finds the line of reflection symme
 
 To run:
 
-bash
+```
 python scripts/find_reflection_symmetry_line.py
-
+```
 
 ### Polyline Splitting and Merging
 
@@ -69,28 +69,29 @@ The `split_disjoint.py` script splits polylines into disjoint segments and attem
 
 To run:
 
-bash
+```
 python scripts/split_disjoint.py
+```
 
 ## Curve Completion Examples
 <table align="center">
   <tr>
     <td align="center">
-      <h4>frag2</h4>
+      <h4>occlusion1</h4>
       <img width="200" alt="sample_output" src="https://github.com/gurveervirk/adobe-gensolve-2024/blob/main/misc-outputs/occlusion1_completed.png"
     </td>
     <td align="center">
-      <h4>isolated</h4>
+      <h4>occlusion2</h4>
       <img width="200" alt="sample_output" src="https://github.com/gurveervirk/adobe-gensolve-2024/blob/main/misc-outputs/occlusion2_completed.png"
     </td>
   </tr>
   <tr>
     <td align="center">
-      <h4>occlusion1</h4>
+      <h4>frag2</h4>
       <img width="200" alt="sample_output" src="https://github.com/gurveervirk/adobe-gensolve-2024/blob/main/misc-outputs/frag2_completed.png"
     </td>
     <td align="center">
-      <h4>occlusion2</h4>
+      <h4>isolated</h4>
       <img width="200" alt="sample_output" src="https://github.com/gurveervirk/adobe-gensolve-2024/blob/main/misc-outputs/isolated.png"
     </td>
   </tr>
