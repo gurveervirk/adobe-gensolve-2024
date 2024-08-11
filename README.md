@@ -30,4 +30,4 @@ To use the project, follow these steps:
 ## Miscellaneous
 
 - [Demo](https://youtu.be/YcmWPHTnhBQ)
-- [Hosted Streamlit App]()
+- [Hosted Streamlit App](https://curvetopia-adobe.streamlit.app/)
