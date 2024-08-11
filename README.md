@@ -44,11 +44,11 @@ To use the project, follow these steps:
   </tr>
   <tr>
     <td align="center">
-      <h4>occulusion1</h4>
+      <h4>occlusion1</h4>
       <img width="200" alt="sample_output" src="https://res.cloudinary.com/utubee/image/upload/v1723400446/fq1nlkbfcksdfgwpctku.png">
     </td>
     <td align="center">
-      <h4>occulusion2</h4>
+      <h4>occlusion2</h4>
       <img width="200" alt="sample_output" src="https://res.cloudinary.com/utubee/image/upload/v1723400446/joarwkgd4cyckb6qjpzz.png">
     </td>
   </tr>
