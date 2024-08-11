@@ -35,9 +35,9 @@ def split_polylines_to_disjoint(polylines):
             for j in range(len(cur_line) - 2):
                 p1, p2, p3 = cur_line[j], cur_line[j+1], cur_line[j+2]
                 angle_diff = angle_difference(calculate_angle(calculate_slope(p1, p2)), calculate_angle(calculate_slope(p2, p3)))
-                if angle_diff >= 30:
+                if angle_diff >= 20:
                     new_line_1 = cur_line[:j+2]
-                    new_line_2 = cur_line[j+2:]
+                    new_line_2 = cur_line[j+1:]
                     if len(new_line_1) < 4:
                         e1 = 0.9
                     else:
@@ -162,7 +162,7 @@ def merge_close_points_if_unique(extended_polylines, tolerance=1e-5):
 
     return merged_polylines
 
-def extend_and_connect_polylines(disjoint_polylines, angle_threshold=30):
+def extend_and_connect_polylines(disjoint_polylines, angle_threshold=20):
     visited = set()
     extended_polylines = []
 
@@ -266,26 +266,26 @@ def extend_and_connect_polylines(disjoint_polylines, angle_threshold=30):
     extended_polylines = [polyline for polyline in extended_polylines if len(polyline) > 0]
 
     # Perform the final merge of close points only if they are unique
-    final_polylines = merge_close_points_if_unique(extended_polylines)
+    # final_polylines = merge_close_points_if_unique(extended_polylines)
 
-    return final_polylines
+    return extended_polylines
 
 # Sample usage
-# path = r'problems\problems\frag2.csv'
-# polylines = read_csv(path)
-# disjoint_polylines = split_polylines_to_disjoint(polylines)
-# extended_polylines = extend_and_connect_polylines(disjoint_polylines)
+path = r'problems\problems\frag2.csv'
+polylines = read_csv(path)
+disjoint_polylines = split_polylines_to_disjoint(polylines)
+extended_polylines = extend_and_connect_polylines(disjoint_polylines)
 
-# print(f"Original polylines: {len(polylines)}")
-# print(f"Disjoint polylines: {len(disjoint_polylines)}")
-# print(f"Extended polylines: {len(extended_polylines)}")
+print(f"Original polylines: {len(polylines)}")
+print(f"Disjoint polylines: {len(disjoint_polylines)}")
+print(f"Extended polylines: {len(extended_polylines)}")
 
-# # Visualization
-# plt.figure()
+# Visualization
+plt.figure()
 
-# for i, polyline in enumerate(extended_polylines):
-#     plt.plot(polyline[:, 0], polyline[:, 1], label=f'Polyline {i}')
-#     midpoint = np.mean(polyline, axis=0)
-#     plt.text(midpoint[0], midpoint[1], f'{i}', fontsize=12)
+for i, polyline in enumerate(extended_polylines):
+    plt.plot(polyline[:, 0], polyline[:, 1], label=f'Polyline {i}')
+    midpoint = np.mean(polyline, axis=0)
+    plt.text(midpoint[0], midpoint[1], f'{i}', fontsize=12)
     
-# plt.show()
+plt.show()
