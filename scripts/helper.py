@@ -51,7 +51,7 @@ def plot(paths_XYs, filename, names, symmetries):
                 ax.plot(x_vals, y_vals, c + '--', linewidth=1)
         
     ax.set_aspect('equal')
-    # plt.savefig(f'misc-outputs/{filename}')
+    plt.savefig(f'misc-outputs/{filename}')
     plt.show()
 
 def plot_simple(paths_XYs, filename=''):

@@ -3,6 +3,7 @@ from helper import read_csv, plot_simple, plot
 from matplotlib import pyplot as plt
 from detect_shapes import fit_shape, calculate_polygon_error, fit_line
 import numpy as np
+import math
 
 # Try fitting shapes to the connected polylines for completion
 def complete_curves(polylines):
@@ -36,13 +37,33 @@ def complete_curves(polylines):
                             new_points = np.concatenate((polyline, fitted_shapes[1]), axis=0)
                         else:
                             new_points = np.concatenate((polyline, fitted_shapes[1][::-1]), axis=0)
+                        
+                        if len(new_points) > 2:
+                            # Check if the polyline is truly a valid line
+                            error, best_points, cur_slope_intercept = fit_line(polyline)
+                            if error < 5:
+                                fit_slope_intercept = fitted_shapes[4][0]
+                                fit_slope = fit_slope_intercept[0]
+                                cur_slope = cur_slope_intercept[0][0]
+
+                                # Calculate the angle between the two slopes
+                                angle_radians = math.atan(abs((fit_slope - cur_slope) / (1 + fit_slope * cur_slope)))
+
+                                # Convert angle from radians to degrees
+                                angle_degrees = math.degrees(angle_radians)
+
+                                # Check if the angle is greater than or equal to 30 degrees
+                                if angle_degrees >= 40:
+                                    # Continue with your process
+                                    continue
+
                         _, best_points, symmetry_lines = fit_line(new_points)
                         fitted_shapes[0] = fitted_shapes[0].union({i})
                         result[j] = [fitted_shapes[0], new_points, best_points, "line", symmetry_lines]
                         flag = True
                         break
 
-                if calculate_polygon_error(polyline, fitted_shapes[2]) < 10:
+                elif calculate_polygon_error(polyline, fitted_shapes[2]) < 10:
                     e11, e12 = polyline[0], polyline[-1]
                     e21, e22 = fitted_shapes[1][0], fitted_shapes[1][-1]
                     if points_are_close(e11, e21):
@@ -71,7 +92,7 @@ def complete_curves(polylines):
 
 if __name__ == '__main__':
     # Load the data
-    path = r'problems\problems\frag2.csv'
+    path = r'problems\problems\occlusion2.csv'
     polylines = read_csv(path)
 
     # Split into disjoint polylines
@@ -88,5 +109,8 @@ if __name__ == '__main__':
     names = [r[3] for r in result]
     best_symmetry_lines = [r[4] for r in result]
 
-    plot_simple([completed_polylines], path.split('\\')[-1].split('.')[0] + '_completed.png')
-    # plot([completed_polylines], path.split('\\')[-1].split('.')[0] + '_completed.png', names, best_symmetry_lines)
+    # Preferably use plot_simple for simple plots
+    # plot_simple([completed_polylines], path.split('\\')[-1].split('.')[0] + '_completed.png')
+
+    # Preferably use plot for complex plots
+    plot([completed_polylines], path.split('\\')[-1].split('.')[0] + '_completed.png', names, best_symmetry_lines)

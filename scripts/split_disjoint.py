@@ -271,21 +271,22 @@ def extend_and_connect_polylines(disjoint_polylines, angle_threshold=20):
     return extended_polylines
 
 # Sample usage
-path = r'problems\problems\frag2.csv'
-polylines = read_csv(path)
-disjoint_polylines = split_polylines_to_disjoint(polylines)
-extended_polylines = extend_and_connect_polylines(disjoint_polylines)
+# path = r'problems\problems\frag2.csv'
+# polylines = read_csv(path)
+# disjoint_polylines = split_polylines_to_disjoint(polylines)
+# extended_polylines = extend_and_connect_polylines(disjoint_polylines)
 
-print(f"Original polylines: {len(polylines)}")
-print(f"Disjoint polylines: {len(disjoint_polylines)}")
-print(f"Extended polylines: {len(extended_polylines)}")
+# print(f"Original polylines: {len(polylines)}")
+# print(f"Disjoint polylines: {len(disjoint_polylines)}")
+# print(f"Extended polylines: {len(extended_polylines)}")
 
-# Visualization
-plt.figure()
+# extended_polylines.sort(key=lambda x: len(x), reverse=True)
+# # Visualization
+# plt.figure()
 
-for i, polyline in enumerate(extended_polylines):
-    plt.plot(polyline[:, 0], polyline[:, 1], label=f'Polyline {i}')
-    midpoint = np.mean(polyline, axis=0)
-    plt.text(midpoint[0], midpoint[1], f'{i}', fontsize=12)
+# for i, polyline in enumerate(extended_polylines):
+#     plt.plot(polyline[:, 0], polyline[:, 1], label=f'Polyline {i}')
+#     midpoint = np.mean(polyline, axis=0)
+#     plt.text(midpoint[0], midpoint[1], f'{i}', fontsize=12)
     
-plt.show()
+# plt.show()

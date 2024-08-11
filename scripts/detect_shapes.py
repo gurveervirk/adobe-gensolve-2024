@@ -13,6 +13,7 @@ def points_are_close(p1, p2, tol=1e-5):
     return distance < tol
 
 def calculate_polygon_error(original_points, fitted_points):
+    # print(len(original_points), len(fitted_points))
     fitted_polygon = Polygon(fitted_points).exterior
     distances = [fitted_polygon.distance(Point(p)) for p in original_points]
     return np.mean(distances)
@@ -82,11 +83,11 @@ def fit_shape(points):
     best_points = errors[0][2]
     symmetry_lines = errors[0][3]
 
-    if errors[1][0] == "line" and abs(errors[1][1] - lowest_error) < 0.075:
+    if abs(line_error - lowest_error) < 0.2:
         best_shape = "line"
-        best_points = errors[1][2]
-        symmetry_lines = errors[1][3]
-        lowest_error = errors[1][1]
+        best_points = line_points
+        symmetry_lines = line_symmetry
+        lowest_error = line_error
 
     print(f"Errors: line={line_error:.2f}, rectangle={rectangle_error:.9f}, ellipse={ellipse_error:.2f}, "
           f"star={star_error:.2f}, triangle={triangle_error:.2f}, "
@@ -105,7 +106,7 @@ def fit_line(points):
     c_y_on_x = model_y_on_x.intercept_
     line_y_on_x = m_y_on_x * x + c_y_on_x
     line_points_y_on_x = np.column_stack((x, line_y_on_x))
-    error_y_on_x = calculate_polygon_error(points, line_points_y_on_x)
+    error_y_on_x = np.mean(np.abs(line_y_on_x - y))
     
     # Fit x on y
     X_x_on_y = y.reshape(-1, 1)
@@ -114,7 +115,7 @@ def fit_line(points):
     c_x_on_y = model_x_on_y.intercept_
     line_x_on_y = (x - c_x_on_y) / m_x_on_y
     line_points_x_on_y = np.column_stack((line_x_on_y, y))
-    error_x_on_y = calculate_polygon_error(points, line_points_x_on_y)
+    error_x_on_y = np.mean(np.abs(line_x_on_y - x))
     
     # Choose the best fit
     if error_y_on_x < error_x_on_y:
@@ -129,6 +130,8 @@ def fit_line(points):
     return best_error, best_line_points, best_symmetry_lines
 
 def fit_rectangle(points):
+    if len(points) < 4:
+        return float('inf'), points, []
     multi_point = MultiPoint(points)
     rect = multi_point.minimum_rotated_rectangle
     rect_points = np.array(rect.exterior.coords)
