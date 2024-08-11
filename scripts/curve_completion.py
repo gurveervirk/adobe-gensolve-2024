@@ -90,27 +90,27 @@ def complete_curves(polylines):
 
     return result
 
-if __name__ == '__main__':
-    # Load the data
-    path = r'problems\problems\occlusion2.csv'
-    polylines = read_csv(path)
+# if __name__ == '__main__':
+#     # Load the data
+#     path = r'problems\problems\frag1.csv'
+#     polylines = read_csv(path)
 
-    # Split into disjoint polylines
-    disjoint_polylines = split_polylines_to_disjoint(polylines)
+#     # Split into disjoint polylines
+#     disjoint_polylines = split_polylines_to_disjoint(polylines)
 
-    # Connect disjoint polylines naturally
-    connected_polylines = extend_and_connect_polylines(disjoint_polylines)
+#     # Connect disjoint polylines naturally
+#     connected_polylines = extend_and_connect_polylines(disjoint_polylines)
 
-    result = complete_curves(connected_polylines)
-    for i, r in enumerate(result):
-        print(f"Completed curve {i}: {r[0]}")
+#     result = complete_curves(connected_polylines)
+#     for i, r in enumerate(result):
+#         print(f"Completed curve {i}: {r[0]}")
 
-    completed_polylines = [r[2] for r in result]
-    names = [r[3] for r in result]
-    best_symmetry_lines = [r[4] for r in result]
+#     completed_polylines = [r[2] for r in result]
+#     names = [r[3] for r in result]
+#     best_symmetry_lines = [r[4] for r in result]
 
-    # Preferably use plot_simple for simple plots
-    # plot_simple([completed_polylines], path.split('\\')[-1].split('.')[0] + '_completed.png')
+#     # Preferably use plot_simple for simple plots
+#     # plot_simple([completed_polylines], path.split('\\')[-1].split('.')[0] + '_completed.png')
 
-    # Preferably use plot for complex plots
-    plot([completed_polylines], path.split('\\')[-1].split('.')[0] + '_completed.png', names, best_symmetry_lines)
+#     # Preferably use plot for complex plots
+#     plot([completed_polylines], path.split('\\')[-1].split('.')[0] + '_completed.png', names, best_symmetry_lines)
