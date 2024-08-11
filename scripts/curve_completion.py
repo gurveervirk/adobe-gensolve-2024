@@ -110,7 +110,7 @@ def complete_curves(polylines):
 #     best_symmetry_lines = [r[4] for r in result]
 
 #     # Preferably use plot_simple for simple plots
-#     # plot_simple([completed_polylines], path.split('\\')[-1].split('.')[0] + '_completed.png')
+#     # plot_simple([completed_polylines], path.split('\\')[-1].split('.')[0] + '_completed.png', show=True)
 
 #     # Preferably use plot for complex plots
-#     plot([completed_polylines], path.split('\\')[-1].split('.')[0] + '_completed.png', names, best_symmetry_lines)
+#     plot([completed_polylines], path.split('\\')[-1].split('.')[0] + '_completed.png', names, best_symmetry_lines, show=True)

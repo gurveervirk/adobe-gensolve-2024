@@ -16,7 +16,7 @@ def read_csv(csv_path):
         path_XYs . append ( XYs )
     return path_XYs
 
-def plot(paths_XYs, filename, names, symmetries):
+def plot(paths_XYs, filename, names, symmetries, show=False):
     fig, ax = plt.subplots(tight_layout=True, figsize=(8, 8))
     ind = 0
     colours = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
@@ -52,9 +52,10 @@ def plot(paths_XYs, filename, names, symmetries):
         
     ax.set_aspect('equal')
     plt.savefig(f'misc-outputs/{filename}')
-    plt.show()
+    if show:
+        plt.show()
 
-def plot_simple(paths_XYs, filename=''):
+def plot_simple(paths_XYs, filename='', show=False):
     fig, ax = plt.subplots(tight_layout=True, figsize=(8, 8))
     ind = 0
     for i, XYs in enumerate(paths_XYs):
@@ -66,5 +67,6 @@ def plot_simple(paths_XYs, filename=''):
             average_XY = np.mean(XY, axis=0)
             ax.text(average_XY[0], average_XY[1], str(i) + ' ' + str(j), fontsize=12, color=c, ha='center')
     plt.savefig(f'misc-outputs/{filename}')
-    plt.show()
+    if show:
+        plt.show()
     

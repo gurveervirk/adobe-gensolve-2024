@@ -9,6 +9,7 @@ from curve_completion import complete_curves
 from split_disjoint import split_polylines_to_disjoint, extend_and_connect_polylines
 import os
 import time  # For simulating processing time
+from io import BytesIO
 
 def path_to_points(path):
     points = []
@@ -82,8 +83,8 @@ def main():
                     # Convert path to points
                     points = path_to_points(latest_shape["path"])
 
-                    # Pass points to fit_shape
-                    best_points, _, _, symmetry_lines = fit_shape(points)
+                    # Pass points to fit_shape (replace True with False if needed)
+                    best_points, _, _, symmetry_lines = fit_shape(points, True)
 
                     # Clear the canvas placeholder
                     canvas_placeholder.empty()
@@ -108,6 +109,9 @@ def main():
                         if np.isinf(slope):
                             x = intercept
                             cv2.line(canvas, (int(x), 0), (int(x), canvas_height), (0, 0, 255), 1)
+                        elif slope == 0:
+                            y = intercept
+                            cv2.line(canvas, (0, int(y)), (canvas_width, int(y)), (0, 0, 255), 1)
                         else:
                             y1 = 0
                             x1 = (y1 - intercept) / slope
@@ -121,6 +125,17 @@ def main():
 
                     # Render the updated canvas
                     canvas_placeholder.image(st.session_state["background_image"], use_column_width=True)
+                    img_bytes = BytesIO()
+                    st.session_state["background_image"].save(img_bytes, format='PNG')
+                    img_bytes = img_bytes.getvalue()
+
+                    st.download_button(
+                        label="Download Image",
+                        data=img_bytes,
+                        file_name="drawn_shape.png",
+                        mime="image/png",
+                        key='1'
+                    )
 
                 else:
                     st.write("No valid path data found. Please draw a shape on the canvas.")
@@ -177,7 +192,18 @@ def main():
             # Display the plotted image
             if os.path.exists(final_path):
                 st.image(final_path, caption="Completed Polylines", use_column_width=True)
-                st.download_button("Download Image", final_path, "Click here to download the image")
+                
+                # Convert image to a byte stream for download
+                with open(final_path, "rb") as file:
+                    img_bytes = file.read()
+
+                st.download_button(
+                    label="Download Image",
+                    data=img_bytes,
+                    file_name=path,
+                    mime="image/png",
+                    key='2'
+                )
             else:
                 st.write("Plot image not found.")
 

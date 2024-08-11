@@ -46,7 +46,7 @@ def fit_shapes(polyline_group):
                     symmetries.append(symmetry_lines)
     return [results], names, symmetries
 
-def fit_shape(points):
+def fit_shape(points, for_simple=False):
     # Ensure points is a numpy array
     points = np.array(points)
 
@@ -63,9 +63,9 @@ def fit_shape(points):
     rectangle_error, rectangle_points, rectangle_symmetry = fit_rectangle(points)
     ellipse_error, ellipse_points, ellipse_symmetry = fit_ellipse(points)
     star_error, star_points, star_symmetry = fit_star(points)
-    triangle_error, triangle_points, triangle_symmetry = fit_triangle(points)
-    pentagon_error, pentagon_points, pentagon_symmetry = fit_pentagon(points)
-    hexagon_error, hexagon_points, hexagon_symmetry = fit_hexagon(points)
+    triangle_error, triangle_points, triangle_symmetry = fit_triangle(points, for_simple)
+    pentagon_error, pentagon_points, pentagon_symmetry = fit_pentagon(points, for_simple)
+    hexagon_error, hexagon_points, hexagon_symmetry = fit_hexagon(points, for_simple)
     
     # Collect all errors and their corresponding points
     errors = [
@@ -278,27 +278,27 @@ def is_regular_polygon(polygon_points):
     # Check if all sides are of equal length and all angles are equal
     return np.allclose(side_lengths, side_lengths[0]) and np.allclose(angles, angles[0])
 
-def fit_triangle(points):
+def fit_triangle(points, for_simple=False):
     hull = cv2.convexHull(np.array(points, dtype=np.float32))
-    if len(hull) != 3 or not is_regular_polygon(hull[:, 0, :]):
+    if not for_simple and len(hull) != 3 or not is_regular_polygon(hull[:, 0, :]):
         return float('inf'), points, []
     triangle_points = hull[:, 0, :]
     triangle_error = calculate_polygon_error(points, triangle_points)
     symmetry_lines = get_regular_polygon_symmetry(triangle_points, 3)
     return triangle_error, triangle_points, symmetry_lines
 
-def fit_pentagon(points):
+def fit_pentagon(points, for_simple=False):
     hull = cv2.convexHull(np.array(points, dtype=np.float32))
-    if len(hull) != 5 or not is_regular_polygon(hull[:, 0, :]):
+    if not for_simple and len(hull) != 5 or not is_regular_polygon(hull[:, 0, :]):
         return float('inf'), points, []
     pentagon_points = hull[:, 0, :]
     pentagon_error = calculate_polygon_error(points, pentagon_points)
     symmetry_lines = get_regular_polygon_symmetry(pentagon_points, 5)
     return pentagon_error, pentagon_points, symmetry_lines
 
-def fit_hexagon(points):
+def fit_hexagon(points, for_simple=False):
     hull = cv2.convexHull(np.array(points, dtype=np.float32))
-    if len(hull) != 6 or not is_regular_polygon(hull[:, 0, :]):
+    if not for_simple and len(hull) != 6 or not is_regular_polygon(hull[:, 0, :]):
         return float('inf'), points, []
     hexagon_points = hull[:, 0, :]
     hexagon_error = calculate_polygon_error(points, hexagon_points)
