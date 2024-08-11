@@ -2,7 +2,7 @@ numpy
 shapely
 scipy
 matplotlib
-opencv-python
+opencv-python-headless
 scikit-learn
 pandas
 CairoSVG
