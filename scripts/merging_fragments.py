@@ -39,13 +39,14 @@ def is_closed_shape_with_convex_hull(points):
     else:
         return False
 def merge_polylines_combinations(polylines):
-    print(len(polylines))
+    
     line_strings = [LineString(polyline) for polyline in polylines]
     used_indices = set()
     shapes_detected = []
     shape_points = []
+    remaining_polylines = []
 
-    for r in range(1,7):
+    for r in range(1,8):
         if r==2:
             continue
         combinations = list(itertools.combinations(enumerate(line_strings), r))
@@ -75,19 +76,21 @@ def merge_polylines_combinations(polylines):
                     used_indices.update(indices)
                     shapes_detected.append(best_shape)
                     shape_points.append(best_points)
-            else:
-                points = np.array(list(merged.coords))
-                lowest_error, best_points, symmetry_lines = fit_line(points)
-                if lowest_error<2.125:
-                    used_indices.update(indices)
-                    shapes_detected.append("line")
-                    shape_points.append(best_points)
-                    continue
-
+                
+            if(isinstance(merged, LineString)):
+                    points =np.array([list(coord) for coord in merged.coords])
+                    lowest_error, best_points, symmetry_lines = fit_line(points)
+                    if lowest_error<10:
+                        used_indices.update(indices)
+                        shapes_detected.append("line")
+                        shape_points.append(best_points)
+        for i in range(len(line_strings)):
+            if i not in used_indices:
+                print(len(remaining_polylines))
+                remaining_polylines.append(np.array([list(coord) for coord in line_strings[i].coords]))
         # except Exception as e:
             #     print(f"Error merging combination {combo}: {e}")
 
-    remaining_polylines = [ list(line_strings[i].coords) for i in range(len(line_strings)) if i not in used_indices]
     # print(shapes_detected)
     return shapes_detected,shape_points, remaining_polylines
 # Main script
@@ -99,9 +102,11 @@ import matplotlib.colors as mcolors
 def plot_shapes(detected_shapes, shape_names, remaining_polylines, original_polylines, output_path):
     plt.figure()
     # Plot detected shapes with their corresponding names and colors
+    i=0
     for shape, name in zip(detected_shapes, shape_names):
         shape = np.array(shape)
         plt.plot(shape[:, 0], shape[:, 1], label=name)
+        
     
     # Plot original polylines with the same color as their detected shape
     # for shape, name in zip(detected_shapes, shape_names):
@@ -112,16 +117,16 @@ def plot_shapes(detected_shapes, shape_names, remaining_polylines, original_poly
     
     # # Plot remaining polylines with a different style
     # remaining_polylines = np.array(remaining_polylines)
+    print(len(remaining_polylines))
     for polyline in remaining_polylines:
         polyline = np.array(polyline)
-        plt.plot(polyline[:, 0], polyline[:, 1], 'k--')
-    
-    plt.legend()
+        plt.plot(polyline[:, 0], polyline[:, 1], linestyle='--' ,label='Remaining')
+    # plt.legend()
     plt.savefig(output_path)
     plt.show()
 
 # Main script
-filename = 'problems/problems/frag2.csv'
+filename = 'problems/problems/frag1.csv'
 polylines = read_csv(filename)
 # Flatten the list of polylines for intersection checking
 flattened_polylines = [item for sublist in polylines for item in sublist]
